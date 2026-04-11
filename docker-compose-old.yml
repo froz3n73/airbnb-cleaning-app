@@ -1,0 +1,19 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: airbnb_cleaning_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: airbnb_cleaning
+      POSTGRES_USER: app_user
+      POSTGRES_PASSWORD: C@laveras1973
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/schema.sql
+
+volumes:
+  postgres_data:

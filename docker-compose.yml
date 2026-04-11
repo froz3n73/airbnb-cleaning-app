@@ -1,0 +1,38 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: airbnb_postgres
+    environment:
+      POSTGRES_USER: app_user
+      POSTGRES_PASSWORD: C@laveras1973
+      POSTGRES_DB: airbnb_cleaning
+    volumes:
+      - airbnb_postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+
+  backend:
+    build: ./backend
+    container_name: airbnb_backend
+    depends_on:
+      - postgres
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: app_user
+      DB_PASSWORD: C@laveras1973
+      DB_NAME: airbnb_cleaning
+      PORT: 4000
+    ports:
+      - "4000:4000"
+
+  frontend:
+    build: ./frontend
+    container_name: airbnb_frontend
+    depends_on:
+      - backend
+    ports:
+      - "8090:80"
+
+volumes:
+  airbnb_postgres_data:

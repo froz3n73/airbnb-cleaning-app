@@ -157,26 +157,29 @@ export default function WorkerView({ user, onLogout }) {
 
 const styles = {
   page: {
-    minHeight: "100vh",
+    minHeight: "100dvh",
     backgroundColor: "#f4f7f4",
-    padding: "12px",
-    fontFamily: "Arial, sans-serif",
+    padding: "clamp(10px, 3vw, 16px)",
+    paddingTop: "max(clamp(10px, 3vw, 16px), env(safe-area-inset-top))",
+    fontFamily:
+      'system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif',
   },
   container: {
     maxWidth: "900px",
     margin: "0 auto",
+    width: "100%",
   },
   header: {
     display: "flex",
     justifyContent: "space-between",
-    alignItems: "stretch",
+    alignItems: "flex-start",
     gap: "12px",
     flexWrap: "wrap",
     marginBottom: "18px",
   },
   title: {
     margin: 0,
-    fontSize: "28px",
+    fontSize: "clamp(1.35rem, 4.5vw, 1.75rem)",
     color: "#1f3b2d",
     lineHeight: 1.1,
   },
@@ -189,7 +192,9 @@ const styles = {
     display: "flex",
     gap: "8px",
     flexWrap: "wrap",
-    width: "100%",
+    flex: "1 1 auto",
+    justifyContent: "flex-end",
+    minWidth: "min(100%, 200px)",
   },
   refreshButton: {
     backgroundColor: "#dbe8d8",
@@ -301,7 +306,7 @@ const styles = {
   },
   codeValue: {
     margin: "0 0 12px 0",
-    fontSize: "32px",
+    fontSize: "clamp(1.5rem, 8vw, 2rem)",
     fontWeight: "bold",
     color: "#1f3b2d",
     wordBreak: "break-word",

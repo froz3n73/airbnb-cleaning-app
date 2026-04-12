@@ -423,20 +423,23 @@ function App() {
 
 const styles = {
   page: {
-    minHeight: "100vh",
+    minHeight: "100dvh",
     background: "#f0f2f5",
     color: "#1a1f2e",
-    padding: "30px",
+    padding: "clamp(12px, 4vw, 30px)",
+    paddingTop: "max(clamp(12px, 4vw, 30px), env(safe-area-inset-top))",
     fontFamily:
       'system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif',
   },
   container: {
     maxWidth: "1200px",
     margin: "0 auto",
+    width: "100%",
   },
   loginCard: {
     maxWidth: "420px",
-    margin: "60px auto",
+    margin: "clamp(24px, 8vw, 60px) auto",
+    width: "min(100%, 420px)",
     background: "#ffffff",
     borderRadius: "16px",
     padding: "28px",
@@ -447,13 +450,14 @@ const styles = {
   headerRow: {
     display: "flex",
     justifyContent: "space-between",
-    alignItems: "center",
-    gap: "20px",
+    alignItems: "flex-start",
+    flexWrap: "wrap",
+    gap: "16px",
     marginBottom: "24px",
   },
   title: {
     margin: "0 0 8px 0",
-    fontSize: "32px",
+    fontSize: "clamp(1.5rem, 5vw, 2rem)",
     fontWeight: "700",
     color: "#111827",
     letterSpacing: "-0.02em",
@@ -465,8 +469,9 @@ const styles = {
   },
   grid: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
-    gap: "20px",
+    gridTemplateColumns:
+      "repeat(auto-fit, minmax(min(100%, 280px), 1fr))",
+    gap: "clamp(14px, 3vw, 20px)",
   },
   card: {
     background: "#ffffff",

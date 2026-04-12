@@ -254,9 +254,12 @@ app.post("/admin/assign-property", requireAuth, requireAdmin, async (req, res) =
 
 // WORKER PROPERTIES
 app.get("/properties/:userId", requireAuth, async (req, res) => {
-  const requestedUserId = parseInt(req.params.userId, 10);
+  const requestedUserId = req.params.userId;
 
-  if (req.user.role !== "admin" && req.user.id !== requestedUserId) {
+  if (
+    req.user.role !== "admin" &&
+    String(req.user.id) !== String(requestedUserId)
+  ) {
     return res.status(403).json({ error: "No autorizado" });
   }
 

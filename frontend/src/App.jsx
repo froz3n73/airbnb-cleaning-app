@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 import WorkerView from "./WorkerView";
+import { getTokenConfig } from "./authConfig";
 
 function App() {
   const API_URL = import.meta.env.VITE_API_URL;
@@ -40,15 +41,6 @@ function App() {
       loadProperties();
     }
   }, [user]);
-
-  const getTokenConfig = () => {
-    const token = localStorage.getItem("token");
-    return {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    };
-  };
 
   const loadWorkers = async () => {
     try {
@@ -173,19 +165,20 @@ function App() {
       await axios.post(
         `${API_URL}/admin/assign-property`,
         {
-          user_id: Number(selectedWorker),
-          property_id: Number(selectedProperty),
+          user_id: selectedWorker,
+          property_id: selectedProperty,
         },
         getTokenConfig()
       );
 
       const workerName =
-        workers.find((w) => Number(w.id) === Number(selectedWorker))?.name ||
+        workers.find((w) => String(w.id) === String(selectedWorker))?.name ||
         "Trabajadora";
 
       const propertyNameText =
-        properties.find((p) => Number(p.id) === Number(selectedProperty))
-          ?.property_name || "Propiedad";
+        properties.find(
+          (p) => String(p.id) === String(selectedProperty)
+        )?.property_name || "Propiedad";
 
       setMessage(`Asignación exitosa: ${propertyNameText} → ${workerName}`);
       setSelectedWorker("");

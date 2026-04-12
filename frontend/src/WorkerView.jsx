@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
+import { getTokenConfig } from "./authConfig";
 
 export default function WorkerView({ user, onLogout }) {
   const [properties, setProperties] = useState([]);
   const [loading, setLoading] = useState(true);
   const [copiedItem, setCopiedItem] = useState("");
- const API_URL = import.meta.env.VITE_API_URL;
+  const API_URL = import.meta.env.VITE_API_URL;
 
   useEffect(() => {
     if (user?.id) {
@@ -17,7 +18,10 @@ export default function WorkerView({ user, onLogout }) {
     try {
       setLoading(true);
 
-      const res = await axios.get(`${API_URL}/properties/${user.id}`);
+      const res = await axios.get(
+        `${API_URL}/properties/${user.id}`,
+        getTokenConfig()
+      );
       setProperties(res.data || []);
     } catch (error) {
       console.error("Error cargando propiedades:", error);

@@ -57,9 +57,52 @@ function App() {
         `${API_URL}/admin/properties`,
         getTokenConfig()
       );
-      setProperties(res.data || []);
+      const rows = res.data || [];
+      setProperties(rows.filter((p) => p.is_active !== false));
     } catch (error) {
       console.error("Load properties error:", error);
+    }
+  };
+
+  const handleDeactivateProperty = async (property) => {
+    const label = property.property_name || "this property";
+    if (
+      !window.confirm(
+        `Deactivate "${label}"? It will be hidden from this list.`
+      )
+    ) {
+      return;
+    }
+
+    const token = localStorage.getItem("token");
+    try {
+      const res = await fetch(
+        `${API_URL}/admin/properties/${property.id}/deactivate`,
+        {
+          method: "PATCH",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!res.ok) {
+        let errText = "Could not deactivate property";
+        try {
+          const body = await res.json();
+          if (body?.error) errText = body.error;
+        } catch {
+          /* ignore */
+        }
+        setMessage(errText);
+        return;
+      }
+
+      setMessage(`Deactivated: ${label}`);
+      await loadProperties();
+    } catch (error) {
+      console.error("Deactivate property error:", error);
+      setMessage("Could not deactivate property");
     }
   };
 
@@ -371,9 +414,20 @@ function App() {
                 ) : (
                   properties.map((property) => (
                     <div key={property.id} style={styles.listItem}>
-                      <strong>{property.property_name}</strong>
-                      <div style={styles.smallText}>
-                        {property.address_line_1}, {property.city}
+                      <div style={styles.propertyRow}>
+                        <div style={styles.propertyMain}>
+                          <strong>{property.property_name}</strong>
+                          <div style={styles.smallText}>
+                            {property.address_line_1}, {property.city}
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          style={styles.dangerButton}
+                          onClick={() => handleDeactivateProperty(property)}
+                        >
+                          Deactivate
+                        </button>
                       </div>
                     </div>
                   ))
@@ -556,6 +610,27 @@ const styles = {
     borderRadius: "10px",
     background: "#f8fafc",
     border: "1px solid #e8eaef",
+  },
+  propertyRow: {
+    display: "flex",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    gap: "12px",
+  },
+  propertyMain: {
+    minWidth: 0,
+    flex: 1,
+  },
+  dangerButton: {
+    flexShrink: 0,
+    padding: "8px 12px",
+    borderRadius: "8px",
+    border: "1px solid #fecaca",
+    background: "#fff",
+    color: "#b91c1c",
+    fontWeight: "600",
+    fontSize: "13px",
+    cursor: "pointer",
   },
   smallText: {
     fontSize: "13px",

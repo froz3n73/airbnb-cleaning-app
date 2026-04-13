@@ -56,17 +56,27 @@ CREATE TABLE assignments (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     property_id UUID NOT NULL REFERENCES properties(id) ON DELETE CASCADE,
+    assigned_date DATE NOT NULL,
     assigned_from DATE,
     assigned_until DATE,
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    CONSTRAINT unique_active_assignment UNIQUE (user_id, property_id)
+    CONSTRAINT unique_assignment_per_date UNIQUE (user_id, property_id, assigned_date)
 );
 
 CREATE INDEX idx_assignments_user_id ON assignments(user_id);
 CREATE INDEX idx_assignments_property_id ON assignments(property_id);
 CREATE INDEX idx_assignments_active ON assignments(is_active);
+CREATE INDEX idx_assignments_assigned_date ON assignments(assigned_date);
+
+-- For existing databases, run:
+-- ALTER TABLE assignments ADD COLUMN IF NOT EXISTS assigned_date DATE;
+-- UPDATE assignments SET assigned_date = CURRENT_DATE WHERE assigned_date IS NULL;
+-- ALTER TABLE assignments ALTER COLUMN assigned_date SET NOT NULL;
+-- ALTER TABLE assignments DROP CONSTRAINT IF EXISTS unique_active_assignment;
+-- ALTER TABLE assignments
+--   ADD CONSTRAINT unique_assignment_per_date UNIQUE (user_id, property_id, assigned_date);
 
 -- =========================
 -- Optional service schedule

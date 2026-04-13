@@ -211,7 +211,7 @@ function App() {
         {
           user_id: selectedWorker,
           property_id: selectedProperty,
-          assigned_date: selectedDate,
+          assigned_date: new Date(selectedDate).toISOString().split("T")[0],
         },
         getTokenConfig()
       );

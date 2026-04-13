@@ -219,30 +219,41 @@ app.get("/admin/properties", requireAuth, requireAdmin, async (req, res) => {
 
 // ASSIGN PROPERTY TO WORKER
 app.post("/admin/assign-property", requireAuth, requireAdmin, async (req, res) => {
-  const { user_id, property_id } = req.body;
+  const { user_id, property_id, assigned_date } = req.body;
+
+  if (!user_id || !property_id || !assigned_date) {
+    return res.status(400).json({
+      error: "user_id, property_id y assigned_date son requeridos",
+    });
+  }
 
   try {
     const existingAssignment = await pool.query(
       `
       SELECT id
       FROM assignments
-      WHERE user_id = $1 AND property_id = $2 AND is_active = true
+      WHERE user_id = $1
+        AND property_id = $2
+        AND assigned_date = $3
+        AND is_active = true
       LIMIT 1
       `,
-      [user_id, property_id]
+      [user_id, property_id, assigned_date]
     );
 
     if (existingAssignment.rows.length > 0) {
-      return res.status(400).json({ error: "Esa propiedad ya está asignada a esa trabajadora" });
+      return res
+        .status(400)
+        .json({ error: "Esa propiedad ya está asignada para esa fecha" });
     }
 
     const result = await pool.query(
       `
-      INSERT INTO assignments (user_id, property_id, is_active)
-      VALUES ($1, $2, true)
-      RETURNING id, user_id, property_id, is_active
+      INSERT INTO assignments (user_id, property_id, assigned_date, is_active)
+      VALUES ($1, $2, $3, true)
+      RETURNING id, user_id, property_id, assigned_date, is_active
       `,
-      [user_id, property_id]
+      [user_id, property_id, assigned_date]
     );
 
     res.json(result.rows[0]);
@@ -279,6 +290,7 @@ app.get("/properties/:userId", requireAuth, async (req, res) => {
       WHERE a.user_id = $1
         AND a.is_active = true
         AND p.is_active = true
+        AND a.assigned_date = CURRENT_DATE
       ORDER BY p.property_name ASC
       `,
       [requestedUserId]

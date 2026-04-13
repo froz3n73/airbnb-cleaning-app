@@ -385,7 +385,33 @@ app.put("/admin/properties/:id", requireAuth, requireAdmin, async (req, res) => 
     res.status(500).json({ error: "Error actualizando propiedad" });
   }
 });
+app.patch("/admin/properties/:id/deactivate", requireAuth, requireAdmin, async (req, res) => {
+  const { id } = req.params;
 
+  try {
+    const result = await pool.query(
+      `
+      UPDATE properties
+      SET is_active = false
+      WHERE id = $1
+      RETURNING id, property_name, address_line_1, city, door_code, entry_instructions, notes, is_active
+      `,
+      [id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "Property not found" });
+    }
+
+    res.json({
+      message: "Property deactivated",
+      property: result.rows[0],
+    });
+  } catch (error) {
+    console.error("Error desactivando propiedad:", error);
+    res.status(500).json({ error: "Error desactivando propiedad" });
+  }
+});
 const PORT = process.env.PORT || 4000;
 
 app.listen(PORT, () => {

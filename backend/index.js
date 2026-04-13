@@ -291,6 +291,45 @@ app.get("/properties/:userId", requireAuth, async (req, res) => {
   }
 });
 
+// DEACTIVATE PROPERTY
+app.patch(
+  "/admin/properties/:id/deactivate",
+  requireAuth,
+  requireAdmin,
+  async (req, res) => {
+    const { id } = req.params;
+
+    try {
+      const result = await pool.query(
+        `
+        UPDATE properties
+        SET is_active = false
+        WHERE id = $1
+        RETURNING
+          id,
+          property_name,
+          address_line_1,
+          city,
+          door_code,
+          entry_instructions,
+          notes,
+          is_active
+        `,
+        [id]
+      );
+
+      if (result.rows.length === 0) {
+        return res.status(404).json({ error: "Propiedad no encontrada" });
+      }
+
+      res.json(result.rows[0]);
+    } catch (error) {
+      console.error("Error desactivando propiedad:", error);
+      res.status(500).json({ error: "Error desactivando propiedad" });
+    }
+  }
+);
+
 // UPDATE PROPERTY
 app.put("/admin/properties/:id", requireAuth, requireAdmin, async (req, res) => {
   const { id } = req.params;

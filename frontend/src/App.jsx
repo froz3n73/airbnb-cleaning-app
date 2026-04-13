@@ -57,9 +57,39 @@ function App() {
         `${API_URL}/admin/properties`,
         getTokenConfig()
       );
-      setProperties(res.data || []);
+      const rows = res.data || [];
+      setProperties(rows.filter((p) => p.is_active !== false));
     } catch (error) {
       console.error("Load properties error:", error);
+    }
+  };
+
+  const handleDeactivateProperty = async (property) => {
+    const confirmed = window.confirm(
+      `¿Desactivar "${property.property_name}"?`
+    );
+    if (!confirmed) return;
+
+    try {
+      const token = localStorage.getItem("token");
+
+      const res = await fetch(
+        `${API_URL}/admin/properties/${property.id}/deactivate`,
+        {
+          method: "PATCH",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!res.ok) throw new Error();
+
+      setMessage("Propiedad desactivada");
+      loadProperties();
+    } catch (error) {
+      console.error("Deactivate error:", error);
+      setMessage("No se pudo desactivar la propiedad");
     }
   };
 
@@ -78,7 +108,6 @@ function App() {
       setUser(res.data.user);
       setMessage("");
     } catch (error) {
-      console.error("Login error:", error);
       setMessage("No se pudo iniciar sesión");
     }
   };
@@ -87,16 +116,13 @@ function App() {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
     setUser(null);
-    setEmail("");
-    setPassword("");
-    setMessage("");
   };
 
   const handleCreateWorker = async (e) => {
     e.preventDefault();
 
     try {
-      const res = await axios.post(
+      await axios.post(
         `${API_URL}/admin/create-user`,
         {
           name: newName,
@@ -107,16 +133,12 @@ function App() {
         getTokenConfig()
       );
 
-      setMessage(`Trabajadora creada: ${res.data.name} (${res.data.email})`);
       setNewName("");
       setNewEmail("");
       setNewPassword("");
       loadWorkers();
     } catch (error) {
-      console.error("Create worker error:", error);
-      setMessage(
-        error?.response?.data?.error || "No se pudo crear la trabajadora"
-      );
+      setMessage("Error creando trabajadora");
     }
   };
 
@@ -124,7 +146,7 @@ function App() {
     e.preventDefault();
 
     try {
-      const res = await axios.post(
+      await axios.post(
         `${API_URL}/admin/create-property`,
         {
           property_name: propertyName,
@@ -137,7 +159,6 @@ function App() {
         getTokenConfig()
       );
 
-      setMessage(`Propiedad creada: ${res.data.property_name}`);
       setPropertyName("");
       setPropertyAddress("");
       setPropertyCity("");
@@ -146,20 +167,14 @@ function App() {
       setPropertyNotes("");
       loadProperties();
     } catch (error) {
-      console.error("Create property error:", error);
-      setMessage(
-        error?.response?.data?.error || "No se pudo crear la propiedad"
-      );
+      setMessage("Error creando propiedad");
     }
   };
 
   const handleAssignProperty = async (e) => {
     e.preventDefault();
 
-    if (!selectedWorker || !selectedProperty) {
-      setMessage("Selecciona trabajadora y propiedad");
-      return;
-    }
+    if (!selectedWorker || !selectedProperty) return;
 
     try {
       await axios.post(
@@ -171,23 +186,10 @@ function App() {
         getTokenConfig()
       );
 
-      const workerName =
-        workers.find((w) => String(w.id) === String(selectedWorker))?.name ||
-        "Trabajadora";
-
-      const propertyNameText =
-        properties.find(
-          (p) => String(p.id) === String(selectedProperty)
-        )?.property_name || "Propiedad";
-
-      setMessage(`Asignación exitosa: ${propertyNameText} → ${workerName}`);
       setSelectedWorker("");
       setSelectedProperty("");
     } catch (error) {
-      console.error("Assign property error:", error);
-      setMessage(
-        error?.response?.data?.error || "No se pudo asignar la propiedad"
-      );
+      setMessage("Error asignando propiedad");
     }
   };
 
@@ -199,185 +201,49 @@ function App() {
     return (
       <div style={styles.page}>
         <div style={styles.container}>
-          <div style={styles.headerRow}>
-            <div>
-              <h1 style={styles.title}>Admin Dashboard</h1>
-              <p style={styles.subtitle}>Bienvenido {user.name}</p>
-            </div>
-
-            <button style={styles.logoutButton} onClick={handleLogout}>
-              Logout
-            </button>
-          </div>
+          <h1>Admin Dashboard</h1>
 
           {message && <div style={styles.messageBox}>{message}</div>}
 
           <div style={styles.grid}>
             <div style={styles.card}>
-              <h2 style={styles.cardTitle}>Crear trabajadora</h2>
-
+              <h2>Crear trabajadora</h2>
               <form onSubmit={handleCreateWorker}>
-                <input
-                  type="text"
-                  placeholder="Nombre"
-                  value={newName}
-                  onChange={(e) => setNewName(e.target.value)}
-                  style={styles.input}
-                  required
-                />
-
-                <input
-                  type="email"
-                  placeholder="Email"
-                  value={newEmail}
-                  onChange={(e) => setNewEmail(e.target.value)}
-                  style={styles.input}
-                  required
-                />
-
-                <input
-                  type="password"
-                  placeholder="Password"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  style={styles.input}
-                  required
-                />
-
-                <button type="submit" style={styles.primaryButton}>
-                  Crear trabajadora
-                </button>
+                <input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Nombre" style={styles.input} />
+                <input value={newEmail} onChange={(e) => setNewEmail(e.target.value)} placeholder="Email" style={styles.input} />
+                <input value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="Password" style={styles.input} />
+                <button style={styles.primaryButton}>Crear</button>
               </form>
             </div>
 
             <div style={styles.card}>
-              <h2 style={styles.cardTitle}>Crear propiedad</h2>
-
+              <h2>Crear propiedad</h2>
               <form onSubmit={handleCreateProperty}>
-                <input
-                  type="text"
-                  placeholder="Nombre de propiedad"
-                  value={propertyName}
-                  onChange={(e) => setPropertyName(e.target.value)}
-                  style={styles.input}
-                  required
-                />
-
-                <input
-                  type="text"
-                  placeholder="Dirección"
-                  value={propertyAddress}
-                  onChange={(e) => setPropertyAddress(e.target.value)}
-                  style={styles.input}
-                  required
-                />
-
-                <input
-                  type="text"
-                  placeholder="Ciudad"
-                  value={propertyCity}
-                  onChange={(e) => setPropertyCity(e.target.value)}
-                  style={styles.input}
-                  required
-                />
-
-                <input
-                  type="text"
-                  placeholder="Door code"
-                  value={propertyCode}
-                  onChange={(e) => setPropertyCode(e.target.value)}
-                  style={styles.input}
-                />
-
-                <textarea
-                  placeholder="Instrucciones de entrada"
-                  value={propertyInstructions}
-                  onChange={(e) => setPropertyInstructions(e.target.value)}
-                  style={styles.textarea}
-                />
-
-                <textarea
-                  placeholder="Notas"
-                  value={propertyNotes}
-                  onChange={(e) => setPropertyNotes(e.target.value)}
-                  style={styles.textarea}
-                />
-
-                <button type="submit" style={styles.primaryButton}>
-                  Crear propiedad
-                </button>
+                <input value={propertyName} onChange={(e) => setPropertyName(e.target.value)} placeholder="Nombre" style={styles.input} />
+                <input value={propertyAddress} onChange={(e) => setPropertyAddress(e.target.value)} placeholder="Dirección" style={styles.input} />
+                <input value={propertyCity} onChange={(e) => setPropertyCity(e.target.value)} placeholder="Ciudad" style={styles.input} />
+                <button style={styles.primaryButton}>Crear</button>
               </form>
             </div>
 
             <div style={styles.card}>
-              <h2 style={styles.cardTitle}>Asignar propiedad</h2>
-
-              <form onSubmit={handleAssignProperty}>
-                <select
-                  value={selectedWorker}
-                  onChange={(e) => setSelectedWorker(e.target.value)}
-                  style={styles.input}
-                  required
-                >
-                  <option value="">Selecciona trabajadora</option>
-                  {workers.map((worker) => (
-                    <option key={worker.id} value={worker.id}>
-                      {worker.name} — {worker.email}
-                    </option>
-                  ))}
-                </select>
-
-                <select
-                  value={selectedProperty}
-                  onChange={(e) => setSelectedProperty(e.target.value)}
-                  style={styles.input}
-                  required
-                >
-                  <option value="">Selecciona propiedad</option>
-                  {properties.map((property) => (
-                    <option key={property.id} value={property.id}>
-                      {property.property_name} — {property.city}
-                    </option>
-                  ))}
-                </select>
-
-                <button type="submit" style={styles.primaryButton}>
-                  Asignar propiedad
-                </button>
-              </form>
-            </div>
-
-            <div style={styles.card}>
-              <h2 style={styles.cardTitle}>Trabajadoras</h2>
+              <h2>Propiedades</h2>
               <div style={styles.listBox}>
-                {workers.length === 0 ? (
-                  <p style={styles.emptyText}>No hay trabajadoras todavía</p>
-                ) : (
-                  workers.map((worker) => (
-                    <div key={worker.id} style={styles.listItem}>
-                      <strong>{worker.name}</strong>
-                      <div style={styles.smallText}>{worker.email}</div>
+                {properties.map((p) => (
+                  <div key={p.id} style={{ ...styles.listItem, display: "flex", justifyContent: "space-between" }}>
+                    <div>
+                      <strong>{p.property_name}</strong>
+                      <div>{p.address_line_1}</div>
                     </div>
-                  ))
-                )}
-              </div>
-            </div>
 
-            <div style={styles.card}>
-              <h2 style={styles.cardTitle}>Propiedades</h2>
-              <div style={styles.listBox}>
-                {properties.length === 0 ? (
-                  <p style={styles.emptyText}>No hay propiedades todavía</p>
-                ) : (
-                  properties.map((property) => (
-                    <div key={property.id} style={styles.listItem}>
-                      <strong>{property.property_name}</strong>
-                      <div style={styles.smallText}>
-                        {property.address_line_1}, {property.city}
-                      </div>
-                    </div>
-                  ))
-                )}
+                    <button
+                      onClick={() => handleDeactivateProperty(p)}
+                      style={{ background: "red", color: "white", borderRadius: "6px", padding: "6px 10px" }}
+                    >
+                      Deactivate
+                    </button>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
@@ -388,185 +254,25 @@ function App() {
 
   return (
     <div style={styles.page}>
-      <div style={styles.loginCard}>
-        <h1 style={styles.title}>Login</h1>
-
-        {message && <div style={styles.messageBox}>{message}</div>}
-
-        <form onSubmit={handleLogin}>
-          <input
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            style={styles.input}
-            required
-          />
-
-          <input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            style={styles.input}
-            required
-          />
-
-          <button type="submit" style={styles.primaryButton}>
-            Iniciar sesión
-          </button>
-        </form>
-      </div>
+      <form onSubmit={handleLogin}>
+        <input value={email} onChange={(e) => setEmail(e.target.value)} />
+        <input value={password} onChange={(e) => setPassword(e.target.value)} />
+        <button>Login</button>
+      </form>
     </div>
   );
 }
 
 const styles = {
-  page: {
-    minHeight: "100dvh",
-    background: "#f0f2f5",
-    color: "#1a1f2e",
-    padding: "clamp(12px, 4vw, 30px)",
-    paddingTop: "max(clamp(12px, 4vw, 30px), env(safe-area-inset-top))",
-    fontFamily:
-      'system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif',
-  },
-  container: {
-    maxWidth: "1200px",
-    margin: "0 auto",
-    width: "100%",
-  },
-  loginCard: {
-    maxWidth: "420px",
-    margin: "clamp(24px, 8vw, 60px) auto",
-    width: "min(100%, 420px)",
-    background: "#ffffff",
-    borderRadius: "16px",
-    padding: "28px",
-    boxShadow:
-      "0 1px 3px rgba(0,0,0,0.06), 0 8px 24px rgba(0,0,0,0.06)",
-    border: "1px solid #e8eaef",
-  },
-  headerRow: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    flexWrap: "wrap",
-    gap: "16px",
-    marginBottom: "24px",
-  },
-  title: {
-    margin: "0 0 8px 0",
-    fontSize: "clamp(1.5rem, 5vw, 2rem)",
-    fontWeight: "700",
-    color: "#111827",
-    letterSpacing: "-0.02em",
-  },
-  subtitle: {
-    margin: 0,
-    color: "#64748b",
-    fontSize: "15px",
-  },
-  grid: {
-    display: "grid",
-    gridTemplateColumns:
-      "repeat(auto-fit, minmax(min(100%, 280px), 1fr))",
-    gap: "clamp(14px, 3vw, 20px)",
-  },
-  card: {
-    background: "#ffffff",
-    borderRadius: "14px",
-    padding: "22px",
-    boxShadow:
-      "0 1px 3px rgba(0,0,0,0.05), 0 6px 20px rgba(0,0,0,0.04)",
-    border: "1px solid #e8eaef",
-  },
-  cardTitle: {
-    marginTop: 0,
-    marginBottom: "16px",
-    fontSize: "18px",
-    fontWeight: "600",
-    color: "#111827",
-  },
-  input: {
-    width: "100%",
-    boxSizing: "border-box",
-    padding: "12px 14px",
-    marginBottom: "12px",
-    borderRadius: "10px",
-    border: "1px solid #d1d5db",
-    background: "#ffffff",
-    color: "#111827",
-    fontSize: "15px",
-  },
-  textarea: {
-    width: "100%",
-    boxSizing: "border-box",
-    minHeight: "90px",
-    padding: "12px 14px",
-    marginBottom: "12px",
-    borderRadius: "10px",
-    border: "1px solid #d1d5db",
-    background: "#ffffff",
-    color: "#111827",
-    fontSize: "15px",
-    resize: "vertical",
-  },
-  primaryButton: {
-    width: "100%",
-    padding: "12px 14px",
-    borderRadius: "10px",
-    border: "none",
-    background: "#5a9a3e",
-    color: "#fff",
-    fontWeight: "600",
-    fontSize: "15px",
-    cursor: "pointer",
-    boxShadow: "0 1px 2px rgba(0,0,0,0.05)",
-  },
-  logoutButton: {
-    padding: "10px 16px",
-    borderRadius: "10px",
-    border: "1px solid #e5e7eb",
-    background: "#ffffff",
-    color: "#64748b",
-    fontWeight: "600",
-    cursor: "pointer",
-    height: "fit-content",
-    boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
-  },
-  messageBox: {
-    background: "#f8fafc",
-    border: "1px solid #e2e8f0",
-    borderRadius: "10px",
-    padding: "12px 14px",
-    marginBottom: "16px",
-    color: "#334155",
-    fontSize: "14px",
-  },
-  listBox: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "10px",
-    maxHeight: "320px",
-    overflowY: "auto",
-  },
-  listItem: {
-    padding: "12px 14px",
-    borderRadius: "10px",
-    background: "#f8fafc",
-    border: "1px solid #e8eaef",
-  },
-  smallText: {
-    fontSize: "13px",
-    color: "#64748b",
-    marginTop: "4px",
-  },
-  emptyText: {
-    color: "#94a3b8",
-    margin: 0,
-    fontSize: "14px",
-  },
+  page: { padding: 20 },
+  container: { maxWidth: 1200, margin: "0 auto" },
+  grid: { display: "grid", gap: 20 },
+  card: { background: "#fff", padding: 20 },
+  input: { display: "block", marginBottom: 10 },
+  primaryButton: { padding: 10 },
+  listBox: { display: "flex", flexDirection: "column", gap: 10 },
+  listItem: { padding: 10, background: "#eee" },
+  messageBox: { marginBottom: 10 }
 };
 
 export default App;

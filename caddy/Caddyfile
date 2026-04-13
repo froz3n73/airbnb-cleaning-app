@@ -1,0 +1,7 @@
+app.shortstayhq.net {
+    reverse_proxy airbnb_frontend:80
+}
+
+api.shortstayhq.net {
+    reverse_proxy airbnb_backend:4000
+}
